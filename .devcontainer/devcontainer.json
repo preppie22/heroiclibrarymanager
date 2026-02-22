@@ -1,0 +1,28 @@
+{
+    "name": "Heroic Library Manager Dev",
+    "build": { "dockerfile": "Dockerfile" },
+    "containerEnv": {
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+        "XDG_RUNTIME_DIR": "/tmp/runtime-dir"
+    },
+    "runArgs": [
+        "--net=host",
+        "--ipc=host",
+        "-v", "/tmp/.X11-unix:/tmp/.X11-unix",
+        "-v", "${localEnv:XDG_RUNTIME_DIR}:/tmp/runtime-dir"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "tamasfe.even-better-toml",
+                // "Google.geminicodeassist",
+                "ms-azuretools.vscode-containers",
+                "GitHub.copilot-chat"
+
+            ]
+        }
+    },
+    "postCreateCommand": "pip install -e ."
+}
