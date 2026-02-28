@@ -1,8 +1,7 @@
 import json
 import logging
-import platform
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Union
 
 from heroiclibrarymanager.models.game import HeroicGame
 
@@ -12,34 +11,16 @@ logger = logging.getLogger(__name__)
 class HeroicScanner:
     """Scans all games in all Heroic libraries"""
 
-    def __init__(self, config_path: Optional[Path] = None, debug: bool = False):
-        self.config_path = config_path or self._detect_config_path()
+    def __init__(self, config_path: Union[str, Path, None] = None, debug: bool = False):
         self.debug = debug
-        logger.debug(f"Config path: {self.config_path}")
-
-    def _detect_config_path(self) -> Path:
-        """Detects the Heroic config path based on the OS."""
-        system = platform.system()
-        home = Path.home()
-        logger.debug(f"Detected OS: {system}")
-
-        if system == "Linux":
-            # Check for Flatpak first, then standard config
-            flatpak_path = home / ".var/app/com.heroicgameslauncher.hgl/config/heroic"
-            if flatpak_path.exists():
-                return flatpak_path
-            return home / ".config/heroic"
-        elif system == "Windows":
-            return home / "AppData/Roaming/heroic"
-        elif system == "Darwin": # I don't know why anyone would install Heroic on macOS...
-            return home / "Library/Application Support/heroic"
-
-        # Default fallback
-        return home / ".config/heroic"
+        self.games = []
+        if config_path: self.config_path = Path(config_path)
 
     def scan(self) -> List[HeroicGame]:
         """Scans all supported stores for installed games."""
-        games = []
+        if not self.config_path:
+            logger.warning("Scanner did not find a config path!")
+            return []
         hidden = []
         try:
             with open(self.config_path / "store" / "config.json", "r", encoding="utf-8") as f:
@@ -52,7 +33,7 @@ class HeroicScanner:
         store_cache = self.config_path / "store_cache"
         store = self.config_path / "store"
         if not store_cache.exists() or not store.exists():
-            return games
+            return self.games
 
         # not dealing with zoom or whatever that is for now
         stores = [
@@ -64,12 +45,12 @@ class HeroicScanner:
         for data in stores:
             file_path = store_cache / data['filename']
             if file_path.exists():
-                games.extend(self._load_store_games(file_path, hidden, data['title']))
+                self.games.extend(self._load_store_games(file_path, hidden, data['title']))
             else:
                 logger.debug(f"No library file found for {data['tite']}")
 
-        logger.info(f"Total games found: {len(games)}")
-        return games
+        logger.info(f"Total games found: {len(self.games)}")
+        return self.games 
 
     def _load_store_games(self, file_path: Path, hidden: list, store_title: str) -> List[HeroicGame]:
         """Parses a specific store's database file."""

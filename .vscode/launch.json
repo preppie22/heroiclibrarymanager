@@ -2,6 +2,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Core Library",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "heroiclibrarymanager.core.library",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+
+        }
+
+        {
             "name": "Run Scanner Test",
             "type": "debugpy",
             "request": "launch",
