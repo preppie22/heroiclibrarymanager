@@ -4,12 +4,17 @@ from rapidfuzz import fuzz, process, utils
 class GameLibrary:
     def __init__(self, games: list[HeroicGame]):
         self._all_games = games
+        self._duplicates = games
 
     def __iter__(self):
         return iter(self._all_games)
     
     def __len__(self):
         return len(self._all_games)
+    
+    @property
+    def games(self) -> list[HeroicGame]:
+        return self._all_games
 
     def filter_platform(self, platform: str) -> list[HeroicGame]:
         return [g for g in self._all_games if g.platform == platform]
