@@ -1,5 +1,6 @@
 from functools import cached_property
 import platform
+from platformdirs import user_config_path
 from pathlib import Path
 import os
 
@@ -10,7 +11,7 @@ class Environment:
         self.os_name = platform.system()
 
     @cached_property
-    def config_root(self) -> Path | None:
+    def heroic_config_root(self) -> Path | None:
         """ Config folder for heroic """
         if self.os_name == "Linux":
             paths = [
@@ -21,3 +22,10 @@ class Environment:
                 if path.exists():
                     return path
             return None
+        
+    @cached_property
+    def app_config_root(self) -> Path | None:
+        """ Config folder for this app """
+        path = user_config_path("heroiclibrarymanager")
+        path.mkdir(parents=True, exist_ok=True)
+        return path
