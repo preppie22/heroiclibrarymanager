@@ -11,12 +11,17 @@ class Environment:
     """Handles environment-specific paths and configurations for Heroic Library Manager."""
     def __init__(self):
         self.home = Path.home()
-        self.os_name = platform.system()
+        self._os_name = platform.system()
+
+    def is_os_supported(self) -> bool:
+        if self._os_name == "Linux":
+            return True
+        return False
 
     @cached_property
     def heroic_config_root(self) -> Path | None:
         """ Config folder for heroic """
-        if self.os_name != "Linux":
+        if self._os_name != "Linux":
             logger.warning("Linux is the only supported OS for this app!")
             return None
         

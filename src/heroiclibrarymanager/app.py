@@ -4,11 +4,12 @@ Manages duplicate games from multiple stores in Heroic Games Launcher.
 
 import toga
 import os
+import asyncio
 from toga.style import Pack
-# from toga.style.pack import COLUMN, ROW
+
 from heroiclibrarymanager.core.scanner import HeroicScanner
 from heroiclibrarymanager.core.library import GameLibrary
-# from heroiclibrarymanager.core.environment import Environment
+from heroiclibrarymanager.core.environment import Environment
 
 class HeroicLibraryManager(toga.App):
     def startup(self):
@@ -18,7 +19,18 @@ class HeroicLibraryManager(toga.App):
         print(icon_path)
         # main_box = toga.Box()
 
-        # env = Environment()
+        env = Environment()
+        self.main_window = toga.MainWindow(title=self.formal_name)
+        self.main_window.show()
+        async def check_environment(app):
+             if not env.is_os_supported():
+                await self.main_window.error_dialog(
+                    "Unsupported OS", 
+                    "Heroic Library Manager only supports Linux."
+                )
+                self.exit()
+        self.add_background_task(check_environment)
+
 
         games = HeroicScanner("/workspaces/heroiclibrarymanager/tests/test_configs").scan()
         library = GameLibrary(games)
@@ -46,9 +58,11 @@ class HeroicLibraryManager(toga.App):
         split = toga.SplitContainer()
         split.content = [(main_table,1),(duplicates_table,1)]
 
-        self.main_window = toga.MainWindow(title=self.formal_name)
+
         self.main_window.content = split
-        self.main_window.show()
+
+
+
 
 
 def main():
