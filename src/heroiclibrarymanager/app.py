@@ -115,7 +115,8 @@ class HeroicLibraryManager(toga.App):
                 }
                 children.append((child_data, None))
             tree_data.append((parent_node, children))
-        self.duplicates_table.data = tree_data
+        sorted_data = sorted(tree_data, key=lambda t: t[0]["Game"])
+        self.duplicates_table.data = sorted_data
             
 def main():
     return HeroicLibraryManager(

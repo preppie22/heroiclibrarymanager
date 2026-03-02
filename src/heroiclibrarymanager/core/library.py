@@ -48,9 +48,9 @@ class GameLibrary:
                 anchor_platform = None
                 continue
 
-            game_duplicates = []
             if game.is_dlc: continue
             if game.is_hidden: continue
+            game_duplicates = []
             while other_platforms:
                 other_games = platform_games[other_platforms.pop()]
                 other_titles = [g.title for g in other_games]
@@ -62,8 +62,9 @@ class GameLibrary:
                 )
                 if match and match[1] >= threshold:
                     matched_game = other_games[match[2]]
-                    if not game_duplicates: game_duplicates.append(game)
-                    game_duplicates.append(matched_game)
+                    if not matched_game.is_hidden:
+                        if not game_duplicates: game_duplicates.append(game)
+                        game_duplicates.append(matched_game)
             if game_duplicates: duplicates.append(game_duplicates)
         return duplicates
 
