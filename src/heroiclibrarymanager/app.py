@@ -25,12 +25,19 @@ class HeroicLibraryManager(toga.App):
         # main_box = toga.Box()
 
         # added a hint here because the studid linter keeps showing red squigglies
-        self.main_window: toga.MainWindow = toga.MainWindow(title=self.formal_name)
+        self.main_window: toga.MainWindow = toga.MainWindow(
+            title=self.formal_name,
+            size=(1200, 800)
+        )
 
-        self.main_table = toga.DetailedList(style=Pack(flex=1))
+        self.main_table = toga.Table(
+            headings=["Game", "Store"],
+            style=Pack(flex=1)
+        )
         self.duplicates_table = toga.Tree(
             headings=["Game", "Store"],
-            accessors=["Game", "Store"]
+            accessors=["Game", "Store"],
+            style=Pack(flex=4)
         )
 
         scan_cmd = toga.Command(
@@ -48,8 +55,11 @@ class HeroicLibraryManager(toga.App):
 
         self.main_window.toolbar.add(scan_cmd)
         self.main_window.toolbar.add(scan_dups_cmd)
-        split = toga.SplitContainer()
-        split.content = [self.main_table, self.duplicates_table]
+        split = toga.SplitContainer(style=Pack(flex=1))
+        split.content = [
+            self.main_table, 
+            self.duplicates_table
+        ]
 
         self.main_window.content = split
         self.main_window.show()
@@ -59,19 +69,32 @@ class HeroicLibraryManager(toga.App):
 
     def scan_library(self, widget):
         self.main_table.data.clear()
-        for game in self.game_library:
+        sorted_games = sorted(
+            self.game_library, 
+            key=lambda g: (g.title.lower(), g.platform.lower())
+        )
+        for game in sorted_games:
+            if game.is_dlc: continue
             if game.is_hidden:
-                self.main_table.data.append({
-                    "icon": self.hidden_icon,
-                    "title": f" {game.title}",
-                    "subtitle": f"Hidden on {game.platform}"
-                })
+                # self.main_table.data.append({
+                #     "icon": self.hidden_icon,
+                #     "title": f" {game.title}",
+                #     "subtitle": f"Hidden on {game.platform}"
+                # })
+                self.main_table.data.append((
+                    (self.hidden_icon, f" {game.title}"),
+                    game.platform
+                ))
             else:
-                self.main_table.data.append({
-                    "icon": self.visible_icon,
-                    "title": game.title,
-                    "subtitle": game.platform
-                })
+                # self.main_table.data.append({
+                #     "icon": self.visible_icon,
+                #     "title": game.title,
+                #     "subtitle": game.platform
+                # })
+                self.main_table.data.append((
+                    (self.visible_icon, f" {game.title}"),
+                    game.platform
+                ))
 
     def scan_dups(self, widget):
         self.duplicates_table.data.clear()
@@ -87,7 +110,7 @@ class HeroicLibraryManager(toga.App):
             children = []
             for game in game_dups:
                 child_data = {
-                    "Game": game.title,
+                    "Game": (self.visible_icon, f" {game.title}"),
                     "Store": game.platform
                 }
                 children.append((child_data, None))
