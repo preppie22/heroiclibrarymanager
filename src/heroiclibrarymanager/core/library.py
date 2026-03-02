@@ -22,7 +22,7 @@ class GameLibrary:
     def get_visible(self) -> list[HeroicGame]:
         return [g for g in self._all_games if not g.is_hidden]
     
-    def get_duplicates(self, threshold=90) -> list[list[HeroicGame]]:
+    def get_duplicates(self, threshold=95) -> list[list[HeroicGame]]:
         """
             Gets duplicates.
             This code is janky af and could be improved later. Not touching right now!
@@ -57,7 +57,8 @@ class GameLibrary:
                 match = process.extractOne(
                     game.title,
                     other_titles,
-                    scorer=fuzz.token_sort_ratio,
+                    # scorer=fuzz.token_sort_ratio,
+                    scorer=fuzz.ratio,
                     processor=utils.default_process
                 )
                 if match and match[1] >= threshold:
