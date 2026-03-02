@@ -12,8 +12,19 @@ class HeroicConfigHandler:
         self.config_root = heroic_config_root
         self.backup_dir = heroic_config_root / "backups_hlm"
 
-    def safe_write_json(self, filename: str, data: dict[str, Any]) -> bool:
-        target_file = self.config_root / filename
+    def read_config(self) -> Any:
+        config_file = self.config_root / "store" / "config.json"
+        config_data = None
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config_data = json.load(f)
+        except Exception:
+            logger.exception(f"Failed to load config file")
+        return config_data
+
+
+    def safe_write_config(self, data: dict[str, Any]) -> bool:
+        target_file = self.config_root / "store" / "config.json"
 
         if not target_file.exists():
             return False
@@ -32,7 +43,7 @@ class HeroicConfigHandler:
             temp_file.replace(target_file)
             return True
         except Exception:
-            logger.exception(f"Failed to safely write to {filename}")
+            logger.exception(f"Failed to safely write to {target_file}")
             return False
 
         return False
