@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 class HeroicScanner:
     """Scans all games in all Heroic libraries"""
 
-    def __init__(self, config_path: Union[str, Path, None] = None, debug: bool = False):
+    def __init__(self, config_path: Path, debug: bool = False):
         self.debug = debug
         self.games = []
-        if config_path: self.config_path = Path(config_path)
+        self.config_path = config_path
 
     def scan(self) -> List[HeroicGame]:
         """Scans all supported stores for installed games."""

@@ -31,7 +31,6 @@ class HeroicConfigHandler:
         
         try:
             self.backup_dir.mkdir(parents=True, exist_ok=True)
-            
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             backup_path = self.backup_dir / f"{target_file.stem}_{timestamp}{target_file.suffix}"
             shutil.copy2(target_file, backup_path)
@@ -45,5 +44,36 @@ class HeroicConfigHandler:
         except Exception:
             logger.exception(f"Failed to safely write to {target_file}")
             return False
-
-        return False
+        
+    def list_backups(self) -> list:
+        if not self.backup_dir.exists():
+            return []
+        config_files = sorted(self.backup_dir.glob("config_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        backups_list = []
+        for file in config_files:
+            timestamp = file.stem.split("_", 1)[-1]
+            timestamp = time.strptime(timestamp, "%Y%m%d_%H%M%S")
+            backups_list.append({
+                "name": file.name,
+                "path": file,
+                "timestamp": timestamp
+            })
+        return backups_list
+    
+    def restore_backup(self, backup_path: Path) -> bool:
+        target_file = self.config_root / "store" / "config.json"
+        if not backup_path.exists() or not target_file.exists():
+            logger.warning(f"Backup file {backup_path} or target config {target_file} does not exist!")
+            return False
+        try:
+            shutil.copy2(backup_path, target_file)
+            return True
+        except Exception:
+            logger.exception(f"Failed to restore backup from {backup_path}")
+            return False
+            
+    
+if __name__ == "__main__":
+    config_path = "/workspaces/heroiclibrarymanager/tests/test_configs"
+    config_handler = HeroicConfigHandler(Path(config_path))
+    print(config_handler.list_backups())
