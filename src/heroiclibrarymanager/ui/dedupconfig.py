@@ -52,9 +52,9 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
             selection.select_path((idx + move_idx,))
             tree_view.grab_focus()
 
-    main_box = toga.Column()
-    store_priority = toga.Column(style=Pack(margin=10, gap=10))
+    main_box = toga.Column(style=Pack(margin=10, gap=10, flex=1))
 
+    store_priority = toga.Column(style=Pack(gap=10, flex=1))
     store_priority_table_buttons = toga.Column(style=Pack(gap=5, margin_top=20))
     store_priority_table_buttons.add(
         toga.Button(
@@ -75,19 +75,20 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     platform_ordered_list = platform_priority.split(",")
     for i, p in enumerate(platform_ordered_list):
         store_priority_table_view.data.append((i+1,p))
-    store_priority_table = toga.Row(style=Pack(gap=10))
+    store_priority_table = toga.Row(style=Pack(gap=10, flex=1))
     store_priority_table.add(store_priority_table_buttons, store_priority_table_view)
   
     store_priority.add(toga.Label("Set the priority for which store's version of a game to keep in case of duplicates:"))
     store_priority.add(store_priority_table)
 
-    save_close_buttons = toga.Row(style=Pack(gap=10, margin_top=20, align_items="end", flex=1))
+    save_close_buttons = toga.Row(style=Pack(gap=10, margin_top=20, align_items="end", justify_content="end"))
     save_close_buttons.add(
         toga.Button("Save & Close", on_press=lambda w: save_close(store_priority_table_view)),
         toga.Button("Cancel", on_press=lambda w: window.close())
     )
 
     main_box.add(store_priority)
+    main_box.add(toga.Divider())
     main_box.add(save_close_buttons)
     window.content = main_box
     return window

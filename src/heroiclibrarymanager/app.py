@@ -88,8 +88,7 @@ class HeroicLibraryManager(toga.App):
             accessors=["Game", "Store"],
             style=Pack(flex=1)
         )
-        self.right_side.add(self.right_side_buttons)
-        self.right_side.add(self.duplicates_table)
+        self.right_side.add(self.right_side_buttons, toga.Divider(), self.duplicates_table)
 
 
         # COMMANDS
