@@ -1,8 +1,8 @@
 import toga
-from toga.sources import ListSource, ListSourceT
 from toga.style import Pack
 import logging
 from enum import Enum
+from gi.repository import Gtk
 
 from heroiclibrarymanager.core.library import GameLibrary
 from heroiclibrarymanager.ui.appconfig import AppConfig
@@ -40,12 +40,11 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
         move_idx = -1 if direction == direction.UP else 1
         check_idx = idx > 0 if direction == direction.UP else idx < len(table_view.data) - 1
         if check_idx:
-            rows = [(row.priority, row.store) for row in table_view.data]
-            stores = [store for _, store in rows]
-            stores[idx], stores[idx + move_idx] = stores[idx + move_idx], stores[idx]
+            rows = [row.store for row in table_view.data]
+            rows[idx], rows[idx + move_idx] = rows[idx + move_idx], rows[idx]
             table_view.data.clear()
-            for i, (priority, _) in enumerate(rows):
-                table_view.data.append((priority, stores[i]))
+            for row in rows:
+                table_view.data.append((row,))
 
             # very hacky way to reselect moved item because toga doesn't provide a way to do it directly
             # does NOT work on Windows!
@@ -58,28 +57,39 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     main_box = toga.Column(style=Pack(margin=10, gap=10, flex=1))
 
     store_priority = toga.Column(style=Pack(gap=10, flex=1))
-    store_priority_table_buttons = toga.Column(style=Pack(gap=5, margin_top=20))
-    store_priority_table_buttons.add(
+    table_buttons = toga.Column(style=Pack(gap=5, margin_top=20))
+    table_buttons.add(
         toga.Button(
         "↑",
-        on_press=lambda w: move_selection(store_priority_table_view, direction.UP)
+        on_press=lambda w: move_selection(store_table_view, direction.UP)
         ),
         toga.Button(
         "↓",
-        on_press=lambda w: move_selection(store_priority_table_view, direction.DOWN)
+        on_press=lambda w: move_selection(store_table_view, direction.DOWN)
         )  
     )
-    store_priority_table_view = toga.Table(
-        accessors=["priority", "store"],
-        headings=["Priority", "Store"],
+
+    priority_table_view = toga.Table(
+        accessors=["priority"],
+        headings=["#"],
+        multiple_select=False,
+        style=Pack(width=36)
+    )
+    priority_table_view._impl.selection.set_mode(Gtk.SelectionMode.NONE)
+    priority_table_view._impl.native_table.set_can_focus(False)
+    store_table_view = toga.Table(
+        accessors=["store"],
+        headings=["Store"],
         multiple_select=False,
         style=Pack(flex=1)
     )
     platform_ordered_list = platform_priority.split(",")
     for i, p in enumerate(platform_ordered_list):
-        store_priority_table_view.data.append((i+1,p))
+        priority_table_view.data.append((i + 1,))
+        store_table_view.data.append((p,))
+
     store_priority_table = toga.Row(style=Pack(gap=10, flex=1))
-    store_priority_table.add(store_priority_table_buttons, store_priority_table_view)
+    store_priority_table.add(table_buttons, priority_table_view, store_table_view)
   
     store_priority.add(toga.Label("Set the priority for which store's version of a game to keep in case of duplicates:"))
     store_priority.add(store_priority_table)
@@ -87,7 +97,7 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     save_close_buttons = toga.Row(style=Pack(gap=10, margin_top=10))
     save_close_buttons.add(
         toga.Box(style=Pack(flex=1)),
-        toga.Button("Save & Close", on_press=lambda w: save_close(store_priority_table_view)),
+        toga.Button("Save & Close", on_press=lambda w: save_close(store_table_view)),
         toga.Button("Cancel", on_press=lambda w: window.close())
     )
 
