@@ -99,7 +99,7 @@ if __name__ == "__main__":
     from heroiclibrarymanager.core.scanner import HeroicScanner
     
     # make sure this exists. dump test configs from your heroic config dir
-    # DON'T POINT TO ACTUAL CONFIG DIR (it's not writing anything, but just in case)
+    # DON'T POINT TO ACTUAL CONFIG DIR
     games = HeroicScanner("/workspaces/heroiclibrarymanager/tests/test_configs").scan()
     library = GameLibrary(games)
     duplicates = library.get_duplicates()
