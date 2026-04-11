@@ -12,25 +12,51 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     platforms = list(game_library.platforms)
     window = toga.Window(title="Deduplication Config")
 
-    platform_priority = app_config.get_value("Deduplication", "platform_priority")
+    # platform_priority = app_config.get_value("Deduplication", "platform_priority")
 
     def move_up(table_view):
-        logger.info(f"Moving down, current selection: {table_view.selection}")
+        logger.info(f"Moving up, current selection: {table_view.selection}")
         selected = table_view.selection
+        if selected is None:
+            return
         idx = table_view.data.index(selected)
         if idx > 0:
-            prior_store = table_view.data[idx-1].store
-            table_view.data[idx-1] = (table_view.data[idx-1].priority, selected.store)
-            table_view.data[idx] = (table_view.data[idx].priority, prior_store)
+            rows = [(row.priority, row.store) for row in table_view.data]
+            stores = [store for _, store in rows]
+            stores[idx], stores[idx - 1] = stores[idx - 1], stores[idx]
+            table_view.data.clear()
+            for i, (priority, _) in enumerate(rows):
+                table_view.data.append((priority, stores[i]))
+
+            # very hacky way to reselect moved item because toga doesn't provide a way to do it directly
+            # does NOT work on Windows!
+            scrolled_window = table_view._impl.native
+            tree_view = scrolled_window.get_child()
+            selection = tree_view.get_selection()
+            selection.select_path((idx - 1,))
+            tree_view.grab_focus()
 
     def move_down(table_view):
         logger.info(f"Moving down, current selection: {table_view.selection}")
         selected = table_view.selection
+        if selected is None:
+            return
         idx = table_view.data.index(selected)
         if idx < len(table_view.data) - 1:
-            prior_store = table_view.data[idx+1].store
-            table_view.data[idx+1] = (table_view.data[idx+1].priority, selected.store)
-            table_view.data[idx] = (table_view.data[idx].priority, prior_store)
+            rows = [(row.priority, row.store) for row in table_view.data]
+            stores = [store for _, store in rows]
+            stores[idx], stores[idx + 1] = stores[idx + 1], stores[idx]
+            table_view.data.clear()
+            for i, (priority, _) in enumerate(rows):
+                table_view.data.append((priority, stores[i]))
+
+            # very hacky way to reselect moved item because toga doesn't provide a way to do it directly
+            # does NOT work on Windows!
+            scrolled_window = table_view._impl.native
+            tree_view = scrolled_window.get_child()
+            selection = tree_view.get_selection()
+            selection.select_path((idx + 1,))
+            tree_view.grab_focus()
 
     main_box = toga.Column()
     store_priority = toga.Column(style=Pack(margin=10, gap=10))
