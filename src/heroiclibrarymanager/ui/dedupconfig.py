@@ -9,10 +9,13 @@ from heroiclibrarymanager.ui.appconfig import AppConfig
 logger = logging.getLogger(__name__)
 
 def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
-    platforms = list(game_library.platforms)
     window = toga.Window(title="Deduplication Config")
 
-    # platform_priority = app_config.get_value("Deduplication", "platform_priority")
+    platform_priority = app_config.get_value("Deduplication", "platform_priority")
+    if platform_priority is None:
+        platforms = list(game_library.platforms)
+        platform_priority = ",".join(platforms)
+        app_config.set_value("Deduplication", "platform_priority", platform_priority)
 
     def move_up(table_view):
         logger.info(f"Moving up, current selection: {table_view.selection}")
@@ -78,7 +81,8 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
         multiple_select=False,
         style=Pack(flex=1)
     )
-    for i, p in enumerate(platforms):
+    platform_ordered_list = platform_priority.split(",")
+    for i, p in enumerate(platform_ordered_list):
         store_priority_table_view.data.append((i+1,p))
     store_priority_table = toga.Row(style=Pack(gap=10))
     store_priority_table.add(store_priority_table_buttons, store_priority_table_view)

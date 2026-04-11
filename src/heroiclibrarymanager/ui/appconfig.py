@@ -34,6 +34,8 @@ class AppConfig:
         return self.config.get(section, key, fallback=None)
     
     def set_value(self, section, key, value):
+        if not section == 'DEFAULT' and self.config.has_section(section):
+            self.config.add_section(section)
         self.config.set(section, key, value)
         try:
             with open(self.config_file, 'w') as f:
