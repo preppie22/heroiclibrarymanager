@@ -18,6 +18,10 @@ class GameLibrary:
     def games(self) -> list[HeroicGame]:
         return self._all_games
     
+    @property
+    def platforms(self) -> set[str]:
+        return {game.platform for game in self._all_games}
+    
     def find(self, title: str, platform: str) -> HeroicGame | None:
         for game in self._all_games:
             if game.title == title and game.platform == platform:

@@ -42,14 +42,14 @@ class Environment:
         return None
         
     @cached_property
-    def app_config_root(self) -> Path | None:
+    def app_config_root(self) -> Path:
         """ Config folder for this app """
         path = user_config_path("heroiclibrarymanager")
         path.mkdir(parents=True, exist_ok=True)
         return path
     
     @cached_property
-    def app_data_root(self) -> Path | None:
+    def app_data_root(self) -> Path:
         """ Data folder for this app """
         path = user_data_path("heroiclibrarymanager")
         path.mkdir(parents=True, exist_ok=True)

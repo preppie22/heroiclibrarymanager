@@ -4,12 +4,19 @@ Manages duplicate games from multiple stores in Heroic Games Launcher.
 
 import toga
 from toga.style import Pack
+from toga.constants import WindowState
+from toga.constants import Direction
+
 import logging
 from pathlib import Path
 
 from heroiclibrarymanager.core.scanner import HeroicScanner
 from heroiclibrarymanager.core.library import GameLibrary
 from heroiclibrarymanager.core.confighandler import HeroicConfigHandler
+
+from heroiclibrarymanager.ui.appconfig import AppConfig
+from heroiclibrarymanager.ui.dedupconfig import DedupConfig
+
 # from heroiclibrarymanager.core.environment import Environment
 
 logger = logging.getLogger(__name__)
@@ -20,65 +27,124 @@ class HeroicLibraryManager(toga.App):
         self.config_path = "/workspaces/heroiclibrarymanager/tests/test_configs"
         self.game_library = GameLibrary(HeroicScanner(Path(self.config_path)).scan())
         self.config_handler = HeroicConfigHandler(Path(self.config_path))
+        self.app_config = AppConfig()
 
     def startup(self):
         icon_path = self.paths.app / "resources" / "icons"
         self.hidden_icon = toga.Icon(icon_path / "hidden.png")
         self.visible_icon = toga.Icon(icon_path / "visible.png")
-        # print(icon_path)
-        # main_box = toga.Box()
+        
+        window_width = self.app_config.get_value('DEFAULT', 'window_width')
+        if not window_width:
+            window_width = 1400
+            self.app_config.set_value('DEFAULT', 'window_width', str(window_width))
+        else:
+            window_width = int(window_width)
+
+        window_height = self.app_config.get_value('DEFAULT', 'window_height')
+        if not window_height:
+            window_height = 900
+            self.app_config.set_value('DEFAULT', 'window_height', str(window_height))
+        else:
+            window_height = int(window_height)
 
         # added a hint here because the fucking linter shows red squigglies
         self.main_window: toga.MainWindow = toga.MainWindow(
             title=self.formal_name,
-            size=(1400, 800)
+            size=(window_width, window_height),
         )
 
+        # LEFT SIDE OF MAIN WINDOW
+        self.left_side = toga.Box(
+            style=Pack(direction='column')
+        )
         self.main_table = toga.Table(
             headings=["Game", "Store"],
-            style=Pack(flex=1),
-            on_activate=self.toggle_hidden
+            on_activate=self.toggle_hidden,
+            style=Pack(flex=1)
         )
+        self.left_side.add(self.main_table)
+
+
+        # RIGHT SIDE OF MAIN WINDOW
+        self.right_side = toga.Box(
+            style=Pack(direction='column')
+        )
+        self.right_side_buttons = toga.Box(
+            style=Pack(direction='row')
+        )
+        self.right_side_buttons.add(toga.Button(
+            "Find Duplicates",
+            on_press=self.scan_dups,
+            style=Pack(margin=5)
+        ))
+        self.right_side_buttons.add(toga.Button(
+            "Preferences",
+            on_press=lambda widget: DedupConfig(self.game_library, self.app_config).show(),
+            style=Pack(margin=5)
+        ))
         self.duplicates_table = toga.Tree(
             headings=["Game", "Store"],
             accessors=["Game", "Store"],
-            style=Pack(flex=4)
+            style=Pack(flex=1)
         )
+        self.right_side.add(self.right_side_buttons)
+        self.right_side.add(self.duplicates_table)
 
-        # scan_cmd = toga.Command(
-        #     self.refresh_library,
-        #     text="Reload Libraries",
-        #     tooltip="Rescan all store libraries",
-        #     icon=toga.Icon(icon_path / "library.png"),
-        # )
 
+        # COMMANDS
+        dup_group = toga.Group("Duplicates", id="duplicates")
         scan_dups_cmd = toga.Command(
-            self.scan_dups,
+            lambda command, **kwargs: (self.scan_dups(None), True)[1],
             text="Find Duplicates",
             tooltip="Scan all libraries for duplicate games",
-            icon=toga.Icon(icon_path / "dup.png")
+            icon=toga.Icon(icon_path / "dup.png"),
+            group=dup_group
         )
-
         save_library_cmd = toga.Command(
-            self.save_library,
+            lambda command, **kwargs: (self.save_library(None), True)[1],
             text="Save Library",
             tooltip="Save library changes to config",
-            icon=toga.Icon(icon_path / "save.png")
+            icon=toga.Icon(icon_path / "save.png"),
+            group=toga.Group.APP,
+            shortcut=toga.Key.MOD_1 + "s"
         )
+        reset_window_cmd = toga.Command(
+            lambda command, **kwargs: (setattr(self.main_window, "size", (1400, 900)), True)[1],
+            text="Reset Window Size",
+            tooltip="Reset the window size to default",
+            group=toga.Group.WINDOW
+        )
+        self.commands.add(scan_dups_cmd, save_library_cmd, reset_window_cmd)
 
-        self.main_window.toolbar.add(scan_dups_cmd, save_library_cmd)
-        # self.main_window.toolbar.add(scan_dups_cmd)
-        split = toga.SplitContainer(style=Pack(flex=1))
-        split.content = [
-            self.main_table, 
-            self.duplicates_table
-        ]
-
-        self.main_window.content = split
+        # Backup button and command will go here. Restoring backups is not working.
+        
+        # self.main_window.toolbar.add(scan_dups_cmd, save_library_cmd)
+        self.split = toga.SplitContainer(direction=Direction.VERTICAL)
+        self.main_window.content = self.split
+        self.on_exit = self.on_close_handler
         self.main_window.show()
-        self.refresh_library(self)
-        # main_box.add(game_table)
 
+        # Re-apply equal flex after the window is realized so the divider starts 50/50.
+        self.split.content = [
+            (self.left_side, 1),
+            (self.right_side, 1)
+        ]
+        self.refresh_library(self)
+
+    async def on_close_handler(self, app: toga.App, **kwargs):
+        width, height = self.main_window.size
+        self.app_config.set_value('DEFAULT', 'window_width', str(width))
+        self.app_config.set_value('DEFAULT', 'window_height', str(height))
+        save_changes = toga.QuestionDialog(
+            "Save Changes",
+            "Do you want to save changes to your library before closing?"
+        )
+        ans = await self.main_window.dialog(save_changes)
+        logger.info(f"Dialog answer: {ans}")
+        if ans:
+            self.save_library(self)
+        self.exit()
 
     def toggle_hidden(self, widget, row):
         game_title = getattr(row, "game", None)
@@ -202,7 +268,9 @@ class HeroicLibraryManager(toga.App):
             tree_data.append((parent_node, children))
         sorted_data = sorted(tree_data, key=lambda t: t[0]["Game"])
         self.duplicates_table.data = sorted_data
-            
+
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     return HeroicLibraryManager(
