@@ -10,7 +10,10 @@ from heroiclibrarymanager.ui.appconfig import AppConfig
 logger = logging.getLogger(__name__)
 
 def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
-    window = toga.Window(title="Deduplication Config")
+    window = toga.Window(
+        title="Deduplication Config",
+        size=(300, 400)
+    )
 
     platform_priority = app_config.get_value("Deduplication", "platform_priority")
     if platform_priority is None:
@@ -81,8 +84,9 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     store_priority.add(toga.Label("Set the priority for which store's version of a game to keep in case of duplicates:"))
     store_priority.add(store_priority_table)
 
-    save_close_buttons = toga.Row(style=Pack(gap=10, margin_top=20, align_items="end", justify_content="end"))
+    save_close_buttons = toga.Row(style=Pack(gap=10, margin_top=10))
     save_close_buttons.add(
+        toga.Box(style=Pack(flex=1)),
         toga.Button("Save & Close", on_press=lambda w: save_close(store_priority_table_view)),
         toga.Button("Cancel", on_press=lambda w: window.close())
     )
