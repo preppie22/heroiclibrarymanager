@@ -2,6 +2,7 @@ import toga
 from toga.sources import ListSource, ListSourceT
 from toga.style import Pack
 import logging
+from enum import Enum
 
 from heroiclibrarymanager.core.library import GameLibrary
 from heroiclibrarymanager.ui.appconfig import AppConfig
@@ -17,16 +18,22 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
         platform_priority = ",".join(platforms)
         app_config.set_value("Deduplication", "platform_priority", platform_priority)
 
-    def move_up(table_view):
-        logger.info(f"Moving up, current selection: {table_view.selection}")
+    class direction(Enum):
+        UP = 1
+        DOWN = 2
+
+    def move_selection(table_view, direction: direction):
         selected = table_view.selection
         if selected is None:
             return
         idx = table_view.data.index(selected)
-        if idx > 0:
+
+        move_idx = -1 if direction == direction.UP else 1
+        check_idx = idx > 0 if direction == direction.UP else idx < len(table_view.data) - 1
+        if check_idx:
             rows = [(row.priority, row.store) for row in table_view.data]
             stores = [store for _, store in rows]
-            stores[idx], stores[idx - 1] = stores[idx - 1], stores[idx]
+            stores[idx], stores[idx + move_idx] = stores[idx + move_idx], stores[idx]
             table_view.data.clear()
             for i, (priority, _) in enumerate(rows):
                 table_view.data.append((priority, stores[i]))
@@ -36,29 +43,7 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
             scrolled_window = table_view._impl.native
             tree_view = scrolled_window.get_child()
             selection = tree_view.get_selection()
-            selection.select_path((idx - 1,))
-            tree_view.grab_focus()
-
-    def move_down(table_view):
-        logger.info(f"Moving down, current selection: {table_view.selection}")
-        selected = table_view.selection
-        if selected is None:
-            return
-        idx = table_view.data.index(selected)
-        if idx < len(table_view.data) - 1:
-            rows = [(row.priority, row.store) for row in table_view.data]
-            stores = [store for _, store in rows]
-            stores[idx], stores[idx + 1] = stores[idx + 1], stores[idx]
-            table_view.data.clear()
-            for i, (priority, _) in enumerate(rows):
-                table_view.data.append((priority, stores[i]))
-
-            # very hacky way to reselect moved item because toga doesn't provide a way to do it directly
-            # does NOT work on Windows!
-            scrolled_window = table_view._impl.native
-            tree_view = scrolled_window.get_child()
-            selection = tree_view.get_selection()
-            selection.select_path((idx + 1,))
+            selection.select_path((idx + move_idx,))
             tree_view.grab_focus()
 
     main_box = toga.Column()
@@ -68,11 +53,11 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     store_priority_table_buttons.add(
         toga.Button(
         "↑",
-        on_press=lambda w: move_up(store_priority_table_view)
+        on_press=lambda w: move_selection(store_priority_table_view, direction.UP)
         ),
         toga.Button(
         "↓",
-        on_press=lambda w: move_down(store_priority_table_view)
+        on_press=lambda w: move_selection(store_priority_table_view, direction.DOWN)
         )  
     )
     store_priority_table_view = toga.Table(
