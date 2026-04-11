@@ -18,6 +18,12 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
         platform_priority = ",".join(platforms)
         app_config.set_value("Deduplication", "platform_priority", platform_priority)
 
+    def save_close(table_view):
+        platforms = [row.store for row in table_view.data]
+        new_platform_order = ",".join(platforms)
+        app_config.set_value("Deduplication", "platform_priority", new_platform_order)
+        window.close()
+
     class direction(Enum):
         UP = 1
         DOWN = 2
@@ -75,8 +81,14 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     store_priority.add(toga.Label("Set the priority for which store's version of a game to keep in case of duplicates:"))
     store_priority.add(store_priority_table)
 
+    save_close_buttons = toga.Row(style=Pack(gap=10, margin_top=20, align_items="end", flex=1))
+    save_close_buttons.add(
+        toga.Button("Save & Close", on_press=lambda w: save_close(store_priority_table_view)),
+        toga.Button("Cancel", on_press=lambda w: window.close())
+    )
 
     main_box.add(store_priority)
+    main_box.add(save_close_buttons)
     window.content = main_box
     return window
 
