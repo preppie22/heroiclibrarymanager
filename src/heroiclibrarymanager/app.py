@@ -156,6 +156,8 @@ class HeroicLibraryManager(toga.App):
         ]
         self.add_background_task(self.refresh_library)
 
+    # shows a toast notification and hides it after a delay
+    # implementation is hacky af so new notifications can interrupt previous ones instead of waiting...
     async def show_toast(self, message, duration : float = 3.0):
         self.toast_label.text = message
         await asyncio.sleep(duration)
@@ -175,6 +177,7 @@ class HeroicLibraryManager(toga.App):
             self.save_library(self)
         return True
 
+    # toggle hidden status of a game when its row is activated
     def toggle_hidden(self, widget, row):
         game_title = getattr(row, "game", None)
         game_store = getattr(row, "store", None)
@@ -191,10 +194,12 @@ class HeroicLibraryManager(toga.App):
         # self.refresh_library(self)
         # self.game_library.toggle_hidden(widget.game)
 
+    # same shit shit but multiple rows
     def toggle_hidden_multi(self, widget, rows):
         for row in rows:
             self.toggle_hidden(widget, row)
 
+    # save changes to file after making a backup
     def save_library(self, widget):
         config_data = self.config_handler.read_config()
         hidden_game_config = []
@@ -219,21 +224,11 @@ class HeroicLibraryManager(toga.App):
         for game in sorted_games:
             if game.is_dlc: continue
             if game.is_hidden:
-                # self.main_table.data.append({
-                #     "icon": self.hidden_icon,
-                #     "title": f" {game.title}",
-                #     "subtitle": f"Hidden on {game.platform}"
-                # })
                 self.main_table.data.append((
                     (self.hidden_icon, f" {game.title}"),
                     game.platform
                 ))
             else:
-                # self.main_table.data.append({
-                #     "icon": self.visible_icon,
-                #     "title": game.title,
-                #     "subtitle": game.platform
-                # })
                 self.main_table.data.append((
                     (self.visible_icon, f" {game.title}"),
                     game.platform
@@ -245,11 +240,6 @@ class HeroicLibraryManager(toga.App):
         if not self.duplicates:
             logger.info("No duplicates found")
             await self.show_toast("No duplicates found in your library!")
-            # no_dups = toga.InfoDialog(
-            #     "No Duplicates Found",
-            #     "No duplicate games were found in your library."
-            # )
-            # await self.main_window.dialog(no_dups)
             return
         self.refresh_dups(self)
         await self.show_toast(f"Found {len(self.duplicates)} groups of duplicates in your library!")
@@ -277,9 +267,11 @@ class HeroicLibraryManager(toga.App):
         sorted_data = sorted(tree_data, key=lambda t: t[0]["Game"])
         self.duplicates_table.data = sorted_data
 
+    # hides all dups that were found based on store priority
     async def hide_dups(self, widget):
         if not self.duplicates:
             logger.info("No duplicates to hide")
+            await self.show_toast("No duplicates to hide!")
             return
         platform_priority = self.app_config.get_value('Deduplication', 'platform_priority')
         if platform_priority:
@@ -289,7 +281,7 @@ class HeroicLibraryManager(toga.App):
             platform_priority = list(self.game_library.platforms)
             logger.info(f"No platform priority in config, using library platforms: {platform_priority}")
         HeroicDupsHider(self.duplicates, platform_priority)
-        self.refresh_library(self)
+        await self.refresh_library(self)
         self.refresh_dups(self)
         for node in self.duplicates_table.data:
             self.duplicates_table.expand(node)
