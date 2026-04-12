@@ -97,10 +97,11 @@ class GameLibrary:
 # for testing only! prints dups to terminal if you run this file
 if __name__ == "__main__":
     from heroiclibrarymanager.core.scanner import HeroicScanner
+    from pathlib import Path
     
     # make sure this exists. dump test configs from your heroic config dir
     # DON'T POINT TO ACTUAL CONFIG DIR
-    games = HeroicScanner("/workspaces/heroiclibrarymanager/tests/test_configs").scan()
+    games = HeroicScanner(Path("/workspaces/heroiclibrarymanager/tests/test_configs")).scan()
     library = GameLibrary(games)
     duplicates = library.get_duplicates()
     print(duplicates)
