@@ -7,6 +7,7 @@ from toga.style import Pack
 from toga.sources import TreeSource
 from toga.constants import Direction
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -50,31 +51,41 @@ class HeroicLibraryManager(toga.App):
         else:
             window_height = int(window_height)
 
+        
+
         # added a hint here because the fucking linter shows red squigglies
         self.main_window: toga.MainWindow = toga.MainWindow(
             title=self.formal_name,
             size=(window_width, window_height),
         )
 
-        # LEFT SIDE OF MAIN WINDOW
-        self.left_side = toga.Box(
-            style=Pack(direction='column')
+        self.main_box = toga.Column(style=Pack(flex=1))
+
+        # NOTIFICATION BAR
+        self.toast_label = toga.Label("", style=Pack(padding=8, font_weight='bold'))
+        self.toast_box = toga.Row(
+            children = [toga.Box(flex=1), self.toast_label, toga.Box(flex=1)],
+            style=Pack(padding=4)
         )
+
+        # LEFT SIDE OF MAIN WINDOW
+        self.left_side = toga.Column()
+        self.left_side_buttons = toga.Row()
+        self.left_side_buttons.add(toga.Button(
+            "Refresh Library",
+            on_press=self.refresh_library,
+            style=Pack(margin=5)
+        ))
         self.main_table = toga.Table(
             headings=["Game", "Store"],
             on_activate=self.toggle_hidden,
             style=Pack(flex=1)
         )
-        self.left_side.add(self.main_table)
-
+        self.left_side.add(self.left_side_buttons, toga.Divider(), self.main_table)
 
         # RIGHT SIDE OF MAIN WINDOW
-        self.right_side = toga.Box(
-            style=Pack(direction='column')
-        )
-        self.right_side_buttons = toga.Box(
-            style=Pack(direction='row')
-        )
+        self.right_side = toga.Column()
+        self.right_side_buttons = toga.Row()
         self.right_side_buttons.add(toga.Button(
             "Find Duplicates",
             on_press=self.scan_dups,
@@ -86,7 +97,7 @@ class HeroicLibraryManager(toga.App):
             style=Pack(margin=5)
         ))
         self.right_side_buttons.add(toga.Button(
-            "Preferences",
+            "Store Priority",
             on_press=lambda widget: DedupConfig(self.game_library, self.app_config).show(),
             style=Pack(margin=5)
         ))
@@ -124,8 +135,11 @@ class HeroicLibraryManager(toga.App):
         self.commands.add(scan_dups_cmd, save_library_cmd, reset_window_cmd)
         
         # self.main_window.toolbar.add(scan_dups_cmd, save_library_cmd)
-        self.split = toga.SplitContainer(direction=Direction.VERTICAL)
-        self.main_window.content = self.split
+        self.split = toga.SplitContainer(direction=Direction.VERTICAL, flex=1)
+        self.main_box.add(self.toast_box, toga.Divider(), self.split)
+        self.main_window.content = self.main_box
+
+
         self.on_exit = self.on_close_handler
         self.main_window.show()
 
@@ -136,6 +150,11 @@ class HeroicLibraryManager(toga.App):
         ]
         self.refresh_library(self)
 
+    async def show_toast(self, message, duration : float = 3.0):
+        self.toast_label.text = message
+        await asyncio.sleep(duration)
+        self.toast_label.text = ""
+    
     async def on_close_handler(self, app: toga.App, **kwargs):
         width, height = self.main_window.size
         self.app_config.set_value('DEFAULT', 'window_width', str(width))
@@ -210,9 +229,19 @@ class HeroicLibraryManager(toga.App):
                     game.platform
                 ))
 
-    def scan_dups(self, widget):
-        self.duplicates = self.game_library.get_duplicates()
+    async def scan_dups(self, widget):
+        self.duplicates = self.game_library.get_duplicates()       
+        if not self.duplicates:
+            logger.info("No duplicates found")
+            await self.show_toast("No duplicates found in your library!")
+            # no_dups = toga.InfoDialog(
+            #     "No Duplicates Found",
+            #     "No duplicate games were found in your library."
+            # )
+            # await self.main_window.dialog(no_dups)
+            return
         self.refresh_dups(self)
+        await self.show_toast(f"Found {len(self.duplicates)} groups of duplicates in your library!")
 
     def refresh_dups(self, widget):
         self.duplicates_table.data.clear()
