@@ -45,9 +45,6 @@ class GameLibrary:
         game.is_hidden = not game.is_hidden
     
     def get_duplicates(self, threshold=95) -> list[list[HeroicGame]]:
-        """
-            Gets duplicates.
-        """
         platforms = {game.platform for game in self._all_games} # get all unique platforms
         platform_games = {} # dict of lists wrt platform e. g. {"GOG": [...], "Epic Games Store": [...]}
         anchor_platform = None # this is the base list which will be compared to everything else
