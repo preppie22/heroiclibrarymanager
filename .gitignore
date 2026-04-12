@@ -64,5 +64,9 @@ logs/
 # Briefcase local configuratoin
 .briefcase/
 
+# VS Code
+.vscode/
+.devcontainer/
+
 # Custom sensitive data
 tests/test_configs/*
