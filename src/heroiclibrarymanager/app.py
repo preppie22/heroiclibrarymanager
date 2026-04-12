@@ -38,7 +38,7 @@ class HeroicLibraryManager(toga.App):
                 children=[
                     toga.Label(
                         "Heroic config folder was not found. Check install and Flatpak permissions.",
-                        style=Pack(padding=16),
+                        style=Pack(margin=16),
                     )
                 ]
             )
