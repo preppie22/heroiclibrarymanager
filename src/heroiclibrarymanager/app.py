@@ -76,9 +76,15 @@ class HeroicLibraryManager(toga.App):
             on_press=self.refresh_library,
             style=Pack(margin=5)
         ))
+        self.left_side_buttons.add(toga.Button(
+            "Hide/Unhide Selected",
+            on_press=lambda widget: self.toggle_hidden_multi(widget, self.main_table.selection),
+            style=Pack(margin=5)
+        ))
         self.main_table = toga.Table(
             headings=["Game", "Store"],
             on_activate=self.toggle_hidden,
+            multiple_select=True,
             style=Pack(flex=1)
         )
         self.left_side.add(self.left_side_buttons, toga.Divider(), self.main_table)
@@ -97,7 +103,7 @@ class HeroicLibraryManager(toga.App):
             style=Pack(margin=5)
         ))
         self.right_side_buttons.add(toga.Button(
-            "Store Priority",
+            "Preferences",
             on_press=lambda widget: DedupConfig(self.game_library, self.app_config).show(),
             style=Pack(margin=5)
         ))
@@ -148,7 +154,7 @@ class HeroicLibraryManager(toga.App):
             (self.left_side, 1),
             (self.right_side, 1)
         ]
-        self.refresh_library(self)
+        self.add_background_task(self.refresh_library)
 
     async def show_toast(self, message, duration : float = 3.0):
         self.toast_label.text = message
@@ -185,6 +191,10 @@ class HeroicLibraryManager(toga.App):
         # self.refresh_library(self)
         # self.game_library.toggle_hidden(widget.game)
 
+    def toggle_hidden_multi(self, widget, rows):
+        for row in rows:
+            self.toggle_hidden(widget, row)
+
     def save_library(self, widget):
         config_data = self.config_handler.read_config()
         hidden_game_config = []
@@ -200,7 +210,7 @@ class HeroicLibraryManager(toga.App):
         logger.info("Library changes saved to config")
         
 
-    def refresh_library(self, widget):
+    async def refresh_library(self, widget):
         self.main_table.data.clear()
         sorted_games = sorted(
             self.game_library, 
@@ -228,6 +238,7 @@ class HeroicLibraryManager(toga.App):
                     (self.visible_icon, f" {game.title}"),
                     game.platform
                 ))
+        await self.show_toast("Loaded library with " + str(len(self.game_library)) + " games")
 
     async def scan_dups(self, widget):
         self.duplicates = self.game_library.get_duplicates()       
