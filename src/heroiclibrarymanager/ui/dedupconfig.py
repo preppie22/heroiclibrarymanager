@@ -2,6 +2,9 @@ import toga
 from toga.style import Pack
 import logging
 from enum import Enum
+
+import gi 
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from heroiclibrarymanager.core.library import GameLibrary
@@ -16,7 +19,7 @@ def DedupConfig(game_library: GameLibrary, app_config: AppConfig):
     )
 
     platform_priority = app_config.get_value("Deduplication", "platform_priority")
-    if platform_priority is None:
+    if platform_priority is None or platform_priority == "":
         platforms = list(game_library.platforms)
         platform_priority = ",".join(platforms)
         app_config.set_value("Deduplication", "platform_priority", platform_priority)

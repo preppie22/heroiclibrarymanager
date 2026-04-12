@@ -8,6 +8,16 @@ import heroiclibrarymanager.core.environment as app_env
 
 class AppConfig:
     app_config = app_env.Environment().app_config_root
+    default_config = {
+        "DEFAULT": {
+            "library_path": "",
+            "window_width": "1400",
+            "window_height": "900"
+        },
+        "Deduplication": {
+            "platform_priority": ""
+        }
+    }
 
     def __init__(self) -> None:
         self.config = ConfigParser()
@@ -15,10 +25,7 @@ class AppConfig:
 
         if not self.config_file.exists():
             logger.warning(f"Config file {self.config_file} does not exist, creating default config")
-            self.config['DEFAULT'] = {
-                'last_scan': '',
-                'library_path': ''
-            }
+            self.config.read_dict(self.default_config)
             try:
                 with open(self.config_file, 'w') as f:
                     self.config.write(f)

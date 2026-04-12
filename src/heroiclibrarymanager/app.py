@@ -4,7 +4,7 @@ Manages duplicate games from multiple stores in Heroic Games Launcher.
 
 import toga
 from toga.style import Pack
-from toga.constants import WindowState
+from toga.sources import TreeSource
 from toga.constants import Direction
 
 import logging
@@ -13,6 +13,7 @@ from pathlib import Path
 from heroiclibrarymanager.core.scanner import HeroicScanner
 from heroiclibrarymanager.core.library import GameLibrary
 from heroiclibrarymanager.core.confighandler import HeroicConfigHandler
+from heroiclibrarymanager.core.hider import HeroicDupsHider
 
 from heroiclibrarymanager.ui.appconfig import AppConfig
 from heroiclibrarymanager.ui.dedupconfig import DedupConfig
@@ -28,6 +29,7 @@ class HeroicLibraryManager(toga.App):
         self.game_library = GameLibrary(HeroicScanner(Path(self.config_path)).scan())
         self.config_handler = HeroicConfigHandler(Path(self.config_path))
         self.app_config = AppConfig()
+        self.duplicates = []
 
     def startup(self):
         icon_path = self.paths.app / "resources" / "icons"
@@ -79,6 +81,11 @@ class HeroicLibraryManager(toga.App):
             style=Pack(margin=5)
         ))
         self.right_side_buttons.add(toga.Button(
+            "Hide Duplicates",
+            on_press=self.hide_dups,
+            style=Pack(margin=5)
+        ))
+        self.right_side_buttons.add(toga.Button(
             "Preferences",
             on_press=lambda widget: DedupConfig(self.game_library, self.app_config).show(),
             style=Pack(margin=5)
@@ -115,8 +122,6 @@ class HeroicLibraryManager(toga.App):
             group=toga.Group.WINDOW
         )
         self.commands.add(scan_dups_cmd, save_library_cmd, reset_window_cmd)
-
-        # Backup button and command will go here. Restoring backups is not working.
         
         # self.main_window.toolbar.add(scan_dups_cmd, save_library_cmd)
         self.split = toga.SplitContainer(direction=Direction.VERTICAL)
@@ -174,47 +179,6 @@ class HeroicLibraryManager(toga.App):
         config_data["games"]["hidden"] = hidden_game_config
         self.config_handler.safe_write_config(config_data)
         logger.info("Library changes saved to config")
-
-
-    def backups(self, widget):
-        """ Work in progress! """
-        backups = self.config_handler.list_backups()
-        backup_window = toga.Window(title="Config Backups")
-        
-        logger.info(f"Available backups: {[b['timestamp'] for b in backups]}")
-        import time
-        backup_table = toga.Table(
-            headings=["Timestamp"]
-        )
-        for backup in backups:
-            backup_table.data.append((
-                time.strftime("%Y-%m-%d %H:%M:%S", backup["timestamp"])
-            ))
-        restore_button = toga.Button(
-            "Restore Selected Backup",
-            flex=1,
-            on_press=lambda w: {
-
-            }
-        )
-        backup_button = toga.Button(
-            "Create New Backup",
-            flex=1,
-            on_press=lambda w: print("Backup functionality not implemented yet")
-        )
-        close_button = toga.Button(
-            "Close",
-            flex=1,
-            on_press=lambda w: backup_window.close()
-        )
-        button_box = toga.Box(
-            children=[restore_button, backup_button, close_button],
-            style=Pack(direction="column", margin=10, gap=10)
-        )
-        split = toga.SplitContainer(style=Pack(flex=1))
-        split.content = [backup_table, button_box]
-        backup_window.content = split
-        backup_window.show()
         
 
     def refresh_library(self, widget):
@@ -247,9 +211,13 @@ class HeroicLibraryManager(toga.App):
                 ))
 
     def scan_dups(self, widget):
+        self.duplicates = self.game_library.get_duplicates()
+        self.refresh_dups(self)
+
+    def refresh_dups(self, widget):
         self.duplicates_table.data.clear()
         tree_data = []
-        for game_dups in self.game_library.get_duplicates():
+        for game_dups in self.duplicates:
             if not game_dups: continue
 
             first_game = game_dups[0]
@@ -259,8 +227,9 @@ class HeroicLibraryManager(toga.App):
             }
             children = []
             for game in game_dups:
+                icon = self.hidden_icon if game.is_hidden else self.visible_icon
                 child_data = {
-                    "Game": (self.visible_icon, f" {game.title}"),
+                    "Game": (icon, f" {game.title}"),
                     "Store": game.platform
                 }
                 children.append((child_data, None))
@@ -268,6 +237,27 @@ class HeroicLibraryManager(toga.App):
         sorted_data = sorted(tree_data, key=lambda t: t[0]["Game"])
         self.duplicates_table.data = sorted_data
 
+    async def hide_dups(self, widget):
+        if not self.duplicates:
+            logger.info("No duplicates to hide")
+            return
+        platform_priority = self.app_config.get_value('Deduplication', 'platform_priority')
+        if platform_priority:
+            platform_priority = platform_priority.split(",")
+            logger.info(f"Using platform priority from config: {platform_priority}")
+        else:
+            platform_priority = list(self.game_library.platforms)
+            logger.info(f"No platform priority in config, using library platforms: {platform_priority}")
+        HeroicDupsHider(self.duplicates, platform_priority)
+        self.refresh_library(self)
+        self.refresh_dups(self)
+        for node in self.duplicates_table.data:
+            self.duplicates_table.expand(node)
+        success = toga.InfoDialog(
+            "Duplicates Hidden",
+            "Duplicate games have been hidden based on your platform priority. Remember to save your library to apply changes to your config."
+        )
+        await self.main_window.dialog(success)
 
 
 def main():
