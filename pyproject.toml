@@ -11,7 +11,7 @@ author_email = "piyushpuranik@gmail.com"
 [tool.briefcase.app.heroiclibrarymanager]
 formal_name = "heroiclibrarymanager"
 description = "Manages your game libraries from multiple stores in Heroic Games Launcher."
-long_description = """More details about the app should go here.
+long_description = """Heroic Library Manager is a tool to manage your game libraries from multiple stores in Heroic Games Launcher. It allows you to scan for duplicates, hide duplicates based on store priority, and more. It is built using the BeeWare suite of tools, which allows it to run on multiple platforms including Windows, macOS, Linux, iOS, and Android.
 """
 sources = [
     "src/heroiclibrarymanager",
@@ -21,6 +21,7 @@ test_sources = [
 ]
 
 requires = [
+    "platformdirs~=4.3",
 ]
 test_requires = [
     "pytest",
@@ -37,10 +38,7 @@ requires = [
 requires = [
     "toga-gtk~=0.5.0",
     "rapidfuzz~=3.14.3",
-    # PyGObject 3.52.1 enforces a requirement on libgirepository-2.0-dev. This library
-    # isn't available on Debian 12/Ubuntu 22.04. If you don't need to support those (or
-    # older) releases, you can remove this version pin. See beeware/toga#3143.
-    "pygobject < 3.52.1",
+    "pygobject < 3.50",
 ]
 
 [tool.briefcase.app.heroiclibrarymanager.linux.system.debian]
@@ -135,7 +133,7 @@ system_runtime_requires = [
 ]
 
 [tool.briefcase.app.heroiclibrarymanager.linux.appimage]
-manylinux = "manylinux_2_28"
+manylinux = "manylinux_2_34"
 
 system_requires = [
     # Needed to compile pycairo wheel
