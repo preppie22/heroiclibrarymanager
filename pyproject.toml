@@ -38,7 +38,7 @@ requires = [
 requires = [
     "toga-gtk~=0.5.0",
     "rapidfuzz~=3.14.3",
-    "pygobject < 3.50",
+    "pygobject>=3.50,<3.52.1",
 ]
 
 [tool.briefcase.app.heroiclibrarymanager.linux.system.debian]

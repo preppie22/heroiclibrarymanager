@@ -27,9 +27,9 @@ class HeroicLibraryManager(toga.App):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.config_path = "/workspaces/heroiclibrarymanager/tests/test_configs"
-        self.config_path = Environment.heroic_config_root
-        self.game_library = GameLibrary(HeroicScanner(Path(self.config_path)).scan())
-        self.config_handler = HeroicConfigHandler(Path(self.config_path))
+        self.config_path = Environment().heroic_config_root
+        self.game_library = GameLibrary(HeroicScanner(self.config_path).scan())
+        self.config_handler = HeroicConfigHandler(self.config_path)
         self.app_config = AppConfig()
         self.duplicates = []
 
