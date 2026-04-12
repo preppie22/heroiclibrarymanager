@@ -161,7 +161,7 @@ class HeroicLibraryManager(toga.App):
         await asyncio.sleep(duration)
         self.toast_label.text = ""
     
-    async def on_close_handler(self, app: toga.App, **kwargs):
+    async def on_close_handler(self, interface, **kwargs) -> bool:
         width, height = self.main_window.size
         self.app_config.set_value('DEFAULT', 'window_width', str(width))
         self.app_config.set_value('DEFAULT', 'window_height', str(height))
@@ -173,7 +173,7 @@ class HeroicLibraryManager(toga.App):
         logger.info(f"Dialog answer: {ans}")
         if ans:
             self.save_library(self)
-        self.exit()
+        return True
 
     def toggle_hidden(self, widget, row):
         game_title = getattr(row, "game", None)
@@ -210,7 +210,7 @@ class HeroicLibraryManager(toga.App):
         logger.info("Library changes saved to config")
         
 
-    async def refresh_library(self, widget):
+    async def refresh_library(self, app: toga.App, **kwargs):
         self.main_table.data.clear()
         sorted_games = sorted(
             self.game_library, 
