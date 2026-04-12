@@ -33,10 +33,10 @@ class Environment:
 
         flatpak_path = self.home / ".var/app/com.heroicgameslauncher.hgl/config/heroic"
         if flatpak_path.exists():
-            logger.debug(f"Found heroic config at {flatpak_path}")
+            logger.info(f"Found heroic config at {flatpak_path}")
             return flatpak_path
         if native_path.exists():
-            logger.debug(f"Found heroic config at {native_path}")
+            logger.info(f"Found heroic config at {native_path}")
             return native_path
         logger.warning(f"Did not find heroic config!")
         return None

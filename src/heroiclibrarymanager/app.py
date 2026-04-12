@@ -28,12 +28,27 @@ class HeroicLibraryManager(toga.App):
         super().__init__(*args, **kwargs)
         # self.config_path = "/workspaces/heroiclibrarymanager/tests/test_configs"
         self.config_path = Environment().heroic_config_root
-        self.game_library = GameLibrary(HeroicScanner(self.config_path).scan())
-        self.config_handler = HeroicConfigHandler(self.config_path)
         self.app_config = AppConfig()
         self.duplicates = []
 
     def startup(self):
+        if self.config_path is None:
+            self.main_window = toga.MainWindow(title=self.formal_name)
+            self.main_window.content = toga.Box(
+                children=[
+                    toga.Label(
+                        "Heroic config folder was not found. Check install and Flatpak permissions.",
+                        style=Pack(padding=16),
+                    )
+                ]
+            )
+            self.main_window.show()
+            asyncio.create_task(self.show_missing_config_dialog(self))
+            return
+
+        self.config_handler = HeroicConfigHandler(self.config_path)
+        self.game_library = GameLibrary(HeroicScanner(self.config_path).scan())
+
         icon_path = self.paths.app / "resources" / "icons"
         self.hidden_icon = toga.Icon(icon_path / "hidden.png")
         self.visible_icon = toga.Icon(icon_path / "visible.png")
@@ -63,10 +78,10 @@ class HeroicLibraryManager(toga.App):
         self.main_box = toga.Column(style=Pack(flex=1))
 
         # NOTIFICATION BAR
-        self.toast_label = toga.Label("", style=Pack(padding=8, font_weight='bold'))
+        self.toast_label = toga.Label("", style=Pack(margin=8, font_weight='bold'))
         self.toast_box = toga.Row(
             children = [toga.Box(flex=1), self.toast_label, toga.Box(flex=1)],
-            style=Pack(padding=4)
+            style=Pack(margin=4)
         )
 
         # LEFT SIDE OF MAIN WINDOW
@@ -155,7 +170,16 @@ class HeroicLibraryManager(toga.App):
             (self.left_side, 1),
             (self.right_side, 1)
         ]
-        self.add_background_task(self.refresh_library)
+        asyncio.create_task(self.refresh_library(self))
+
+    async def show_missing_config_dialog(self, app: toga.App, **kwargs):
+        await self.main_window.dialog(
+            toga.ErrorDialog(
+                "Heroic Config Not Found",
+                "Could not find Heroic Games Launcher config folder. Make sure you have Heroic installed and this app has permissions to read the Heroic config directory.",
+            )
+        )
+        self.exit()
 
     # shows a toast notification and hides it after a delay
     # implementation is hacky af so new notifications can interrupt previous ones instead of waiting...
