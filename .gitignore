@@ -49,6 +49,11 @@ var/
 .installed.cfg
 *.egg
 
+# Python files
+.venv/
+venv/
+.python-version
+
 # IntelliJ Idea family of suites
 .idea
 *.iml

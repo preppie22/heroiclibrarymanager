@@ -4,7 +4,8 @@ project_name = "Heroic Library Manager"
 bundle = "io.github.preppie22"
 version = "0.0.1"
 url = "https://preppie22.github.io/heroiclibrarymanager"
-license.file = "LICENSE"
+license = "MIT"
+license-files = ["LICENSE"]
 author = "Piyush Puranik"
 author_email = "piyushpuranik@gmail.com"
 
